@@ -1,0 +1,443 @@
+/* AI Yahtzee Mobile Controller Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+/* Screen Management */
+.screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+}
+
+.screen.hidden {
+    display: none;
+}
+
+/* Loading Screen */
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Message Boxes */
+.message-box {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 300px;
+    margin: 20px;
+}
+
+.message-box h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.message-box.error {
+    border-left: 5px solid #e74c3c;
+}
+
+.message-box p {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn.primary {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.btn.secondary {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 2px solid #dee2e6;
+}
+
+.btn.secondary:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Join Form */
+.join-form {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 300px;
+    width: 100%;
+}
+
+.join-form h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.join-form input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 10px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+}
+
+.join-form input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Waiting Screen */
+.waiting-area {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 350px;
+    width: 100%;
+}
+
+#player-greeting {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.players-list {
+    margin-bottom: 30px;
+}
+
+.players-list h3 {
+    color: #666;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+#players-container {
+    text-align: left;
+}
+
+.player-item {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.ready-section p {
+    color: #666;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+/* Game Screen */
+.game-status {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 350px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.status-item:last-child {
+    margin-bottom: 0;
+}
+
+.label {
+    font-weight: 600;
+    color: #666;
+}
+
+/* Dice Area */
+.dice-area {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 350px;
+}
+
+.dice-area h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.dice-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.die {
+    width: 50px;
+    height: 50px;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.die.kept {
+    background: #d4edda;
+    border-color: #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+}
+
+.die-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.keep-btn {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.keep-btn:hover {
+    opacity: 1;
+}
+
+.dice-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* Scoring Area */
+.scoring-area {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 350px;
+}
+
+.scoring-area.hidden {
+    display: none;
+}
+
+.scoring-area h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.category-section h4 {
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.category-btn {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    color: #495057;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.category-btn:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.category-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Game Over Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+.game-over-content {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 300px;
+    width: 90%;
+    text-align: center;
+}
+
+.game-over-content h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+#final-scores {
+    margin-bottom: 20px;
+}
+
+#final-scores h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.winner-announcement {
+    margin-bottom: 25px;
+}
+
+#winner-text {
+    color: #28a745;
+    font-size: 18px;
+}
+
+/* Error Toast */
+.error-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: #e74c3c;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 1001;
+    text-align: center;
+}
+
+.error-toast.hidden {
+    display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 400px) {
+    body {
+        padding: 10px;
+    }
+
+    .message-box,
+    .join-form,
+    .waiting-area,
+    .dice-area,
+    .scoring-area {
+        padding: 20px;
+    }
+
+    .dice-container {
+        justify-content: center;
+    }
+
+    .die {
+        width: 45px;
+        height: 45px;
+    }
+
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+}

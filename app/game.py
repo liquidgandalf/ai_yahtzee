@@ -65,7 +65,7 @@ def draw_sidebar(screen, font):
 
 def draw_dice(screen, font):
     """Draw the current dice"""
-    dice_y = 200
+    dice_y = 320  # Moved down to avoid QR code overlap (QR is at y=80-280)
     dice_text = font.render("Dice:", True, TEXT_COLOR)
     screen.blit(dice_text, (20, dice_y))
 
@@ -142,12 +142,13 @@ def run_game(screen, qr_surface):
         pygame.draw.rect(screen, BORDER_COLOR, (GAME_AREA_X, 0, GAME_AREA_WIDTH, SCREEN_HEIGHT), BORDER_WIDTH)
         pygame.draw.line(screen, BORDER_COLOR, (SIDEBAR_WIDTH, 0), (SIDEBAR_WIDTH, SCREEN_HEIGHT), BORDER_WIDTH)
 
-        # Draw QR code
+        # Draw game elements
+        draw_sidebar(screen, font)
+
+        # Draw QR code (after sidebar so it appears on top)
         if qr_surface:
             screen.blit(qr_surface, (20, 80))
 
-        # Draw game elements
-        draw_sidebar(screen, font)
         draw_dice(screen, font)
         draw_scoreboards(screen, font)
 

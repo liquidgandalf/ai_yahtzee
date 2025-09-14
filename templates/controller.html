@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Yahtzee Controller</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <div id="loading-screen" class="screen">
+        <h1>AI Yahtzee</h1>
+        <div class="loading-spinner"></div>
+        <p>Connecting to game server...</p>
+    </div>
+
+    <!-- Cannot Join Screen -->
+    <div id="cannot-join-screen" class="screen hidden">
+        <h1>AI Yahtzee</h1>
+        <div class="message-box error">
+            <h2>Cannot Join Game</h2>
+            <p>The game is already in progress. Please wait for the current game to finish.</p>
+            <button id="retry-btn" class="btn secondary">Try Again</button>
+        </div>
+    </div>
+
+    <!-- Join Game Screen -->
+    <div id="join-screen" class="screen hidden">
+        <h1>AI Yahtzee</h1>
+        <div class="join-form">
+            <h2>Join the Game</h2>
+            <input type="text" id="player-name" placeholder="Enter your name" maxlength="15" value="{{ default_name }}">
+            <button id="join-btn" class="btn primary">Join Game</button>
+        </div>
+    </div>
+
+    <!-- Waiting Screen -->
+    <div id="waiting-screen" class="screen hidden">
+        <h1>AI Yahtzee</h1>
+        <div class="waiting-area">
+            <h2 id="player-greeting">Welcome, Player!</h2>
+            <div class="players-list">
+                <h3>Players:</h3>
+                <div id="players-container"></div>
+            </div>
+            <div class="ready-section">
+                <p id="ready-status">Waiting for more players...</p>
+                <button id="ready-btn" class="btn primary">I'm Ready!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden">
+        <h1>AI Yahtzee</h1>
+
+        <!-- Game Status -->
+        <div class="game-status">
+            <div class="status-item">
+                <span class="label">Current Turn:</span>
+                <span id="current-player">Waiting...</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Roll:</span>
+                <span id="roll-count">0/3</span>
+            </div>
+        </div>
+
+        <!-- Dice Area -->
+        <div class="dice-area">
+            <h3>Your Dice</h3>
+            <div class="dice-container">
+                <div class="die" data-index="0">
+                    <span class="die-value">1</span>
+                    <button class="keep-btn">Keep</button>
+                </div>
+                <div class="die" data-index="1">
+                    <span class="die-value">1</span>
+                    <button class="keep-btn">Keep</button>
+                </div>
+                <div class="die" data-index="2">
+                    <span class="die-value">1</span>
+                    <button class="keep-btn">Keep</button>
+                </div>
+                <div class="die" data-index="3">
+                    <span class="die-value">1</span>
+                    <button class="keep-btn">Keep</button>
+                </div>
+                <div class="die" data-index="4">
+                    <span class="die-value">1</span>
+                    <button class="keep-btn">Keep</button>
+                </div>
+            </div>
+            <div class="dice-controls">
+                <button id="roll-btn" class="btn primary">Roll Dice</button>
+                <button id="reroll-btn" class="btn secondary hidden">Reroll</button>
+            </div>
+        </div>
+
+        <!-- Score Categories -->
+        <div class="scoring-area">
+            <h3>Choose Your Score</h3>
+            <div class="categories-grid">
+                <!-- Upper Section -->
+                <div class="category-section">
+                    <h4>Upper Section</h4>
+                    <button class="category-btn" data-category="ones">Ones</button>
+                    <button class="category-btn" data-category="twos">Twos</button>
+                    <button class="category-btn" data-category="threes">Threes</button>
+                    <button class="category-btn" data-category="fours">Fours</button>
+                    <button class="category-btn" data-category="fives">Fives</button>
+                    <button class="category-btn" data-category="sixes">Sixes</button>
+                </div>
+
+                <!-- Lower Section -->
+                <div class="category-section">
+                    <h4>Lower Section</h4>
+                    <button class="category-btn" data-category="three_of_a_kind">3 of a Kind</button>
+                    <button class="category-btn" data-category="four_of_a_kind">4 of a Kind</button>
+                    <button class="category-btn" data-category="full_house">Full House</button>
+                    <button class="category-btn" data-category="small_straight">Sm Straight</button>
+                    <button class="category-btn" data-category="large_straight">Lg Straight</button>
+                    <button class="category-btn" data-category="yahtzee">Yahtzee</button>
+                    <button class="category-btn" data-category="chance">Chance</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="overlay hidden">
+            <div class="game-over-content">
+                <h2>Game Over!</h2>
+                <div id="final-scores"></div>
+                <div class="winner-announcement">
+                    <h3 id="winner-text"></h3>
+                </div>
+                <button id="play-again-btn" class="btn primary">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Messages -->
+    <div id="error-message" class="error-toast hidden"></div>
+
+    <script src="/static/js/controller.js"></script>
+</body>
+</html>
