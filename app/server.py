@@ -136,7 +136,9 @@ def handle_disconnect():
         for ip, mapped_sid in list(ip_to_sid.items()):
             if mapped_sid == sid:
                 del ip_to_sid[ip]
-                used_colors.discard(player['color'])
+                # Convert color tuple to tuple for set removal
+                color_tuple = tuple(player['color']) if isinstance(player['color'], list) else player['color']
+                used_colors.discard(color_tuple)
 
         save_game_state()
 
@@ -169,7 +171,7 @@ def handle_join(data):
         color = random.choice(available_colors) if available_colors else (
             random.randint(50, 255), random.randint(50, 255), random.randint(50, 255)
         )
-        used_colors.add(color)
+        used_colors.add(tuple(color))  # Ensure color is stored as tuple in set
 
     # Register new player session
     players[new_sid] = {

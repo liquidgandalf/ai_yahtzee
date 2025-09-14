@@ -4,6 +4,7 @@ AI Yahtzee - Multiplayer Yahtzee Game
 Main entry point for the game server
 """
 
+import os
 from threading import Thread
 import pygame
 from app.game import run_game
@@ -19,8 +20,15 @@ def main():
 
     # Initialize Pygame
     pygame.init()
+
+    # Set window to be centered and visible
+    os.environ['SDL_VIDEO_CENTERED'] = '1'
     screen = pygame.display.set_mode((1920, 1080))
     pygame.display.set_caption("AI Yahtzee")
+
+    print("🖥️  Pygame window created - should be visible now!")
+    print("📍 Window size: 1920x1080 (centered on screen)")
+    print("🎨 If you don't see it, check if it's minimized or behind other windows")
 
     # Generate QR code for mobile access
     ip = get_local_ip()

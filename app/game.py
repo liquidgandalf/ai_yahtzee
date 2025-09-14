@@ -182,6 +182,11 @@ def run_game(screen, qr_surface):
     font = pygame.font.SysFont(None, 24)
     running = True
 
+    print("🎮 Starting Pygame display loop...")
+    print(f"📺 Screen size: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+    print(f"👥 Players: {len(players)}")
+    print(f"🎲 Game phase: {game_state['phase']}")
+
     while running:
         screen.fill(BG_COLOR)
 
@@ -195,9 +200,19 @@ def run_game(screen, qr_surface):
         # Draw QR code (after sidebar so it appears on top)
         if qr_surface:
             screen.blit(qr_surface, (20, 80))
+        else:
+            # Draw QR placeholder if no surface
+            pygame.draw.rect(screen, (100, 100, 100), (20, 80, 200, 200))
+            qr_text = font.render("QR Code", True, TEXT_COLOR)
+            screen.blit(qr_text, (70, 170))
 
         draw_dice(screen, font)
         draw_scoreboards(screen, font)
+
+        # Debug info
+        debug_text = f"Players: {len(players)} | Phase: {game_state['phase']}"
+        debug_surf = font.render(debug_text, True, (255, 255, 0))
+        screen.blit(debug_surf, (GAME_AREA_X + 20, SCREEN_HEIGHT - 30))
 
         # Event handling
         for event in pygame.event.get():
