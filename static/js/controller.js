@@ -154,32 +154,40 @@ class YahtzeeController {
     }
 
     handleKnownPlayerRejoin(data) {
-        console.log('Handling known player rejoin:', data);
+        console.log('=== HANDLING KNOWN PLAYER REJOIN ===');
+        console.log('Data:', JSON.stringify(data, null, 2));
+        console.log('Players array:', data.players);
+        console.log('Saved name:', data.saved_name);
 
         // Check if we're already in the game
-        const myPlayer = data.players.find(p => p.name === data.saved_name);
+        const myPlayer = data.players ? data.players.find(p => p.name === data.saved_name) : null;
+        console.log('My player found:', myPlayer);
 
         if (myPlayer) {
             // We're already in the game
-            console.log('Player already in game:', myPlayer);
+            console.log('🎯 Player already in game:', myPlayer);
             this.playerName = myPlayer.name;
             this.playerId = myPlayer.sid || this.socket.id;
 
             if (data.phase === 'waiting') {
+                console.log('🎯 Showing waiting screen');
                 this.showScreen('waiting');
                 this.updatePlayersList();
             } else if (data.phase === 'playing') {
+                console.log('🎯 Showing game screen');
                 this.showScreen('game');
                 this.updateGameDisplay();
             }
         } else if (data.saved_name) {
-            // We have a saved name but not in current game - try to join
-            console.log('Found saved name, joining:', data.saved_name);
+            // We have a saved name but not in current game - pre-fill and show join
+            console.log('🎯 Found saved name, pre-filling join form:', data.saved_name);
             document.getElementById('player-name').value = data.saved_name;
-            this.socket.emit('join', { name: data.saved_name });
+            console.log('🎯 Showing join screen with pre-filled name');
+            this.showScreen('join');
+            // Don't auto-join, let user click the button
         } else {
             // No saved name - show join form
-            console.log('No saved name found');
+            console.log('🎯 No saved name found, showing join screen');
             this.showScreen('join');
         }
     }
@@ -362,13 +370,22 @@ class YahtzeeController {
     }
 
     showScreen(screenId) {
+        console.log('🎯 Switching to screen:', screenId);
+
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.add('hidden');
         });
 
         // Show target screen
-        document.getElementById(`${screenId}-screen`).classList.remove('hidden');
+        const targetScreen = document.getElementById(`${screenId}-screen`);
+        if (targetScreen) {
+            targetScreen.classList.remove('hidden');
+            console.log('✅ Screen switched to:', screenId);
+        } else {
+            console.error('❌ Screen not found:', `${screenId}-screen`);
+        }
+
         this.currentScreen = screenId;
     }
 

@@ -1,19 +1,19 @@
 {
   "players": {
-    "rnCG5JyEkGU-L1JEAAAD": {
+    "8tHmzY8pIfv44jq1AAAB": {
       "color": [
-        255,
-        255,
+        128,
+        128,
         0
       ],
       "name": "Derek",
       "ready": false,
-      "last_active": 1757866616.608363,
+      "last_active": 1757866854.5175693,
       "ip": "192.168.0.248"
     }
   },
   "ip_to_sid": {
-    "192.168.0.248": "rnCG5JyEkGU-L1JEAAAD"
+    "192.168.0.248": "8tHmzY8pIfv44jq1AAAB"
   },
   "player_names": {
     "192.168.0.248": "Derek"
@@ -43,8 +43,8 @@
   },
   "used_colors": [
     [
-      255,
-      255,
+      128,
+      128,
       0
     ]
   ]
