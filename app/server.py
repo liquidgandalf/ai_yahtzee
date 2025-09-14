@@ -297,6 +297,109 @@ def handle_ready():
 
         save_game_state()
 
+def roll_dice(keep_indices=None):
+    """Roll dice for the current player"""
+    if keep_indices is None:
+        keep_indices = []
+
+    # Roll all dice or only non-kept dice
+    new_dice = []
+    for i in range(5):
+        if i in keep_indices:
+            # Keep the existing die
+            new_dice.append(shared_data.game_state['dice'][i])
+        else:
+            # Roll a new die (1-6)
+            new_dice.append(random.randint(1, 6))
+
+    shared_data.game_state['dice'] = new_dice
+    shared_data.game_state['roll_count'] += 1
+
+    # Update kept status
+    shared_data.game_state['dice_kept'] = [i in keep_indices for i in range(5)]
+
+    return new_dice
+
+def calculate_score(dice, category):
+    """Calculate score for a Yahtzee category"""
+    if not dice or len(dice) != 5:
+        return 0
+
+    dice_counts = {}
+    for die in dice:
+        dice_counts[die] = dice_counts.get(die, 0) + 1
+
+    # Upper section (1-6)
+    if category in ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']:
+        number = int(category[0])  # Extract number from category name
+        return dice_counts.get(number, 0) * number
+
+    # Lower section
+    elif category == 'three_of_a_kind':
+        for count in dice_counts.values():
+            if count >= 3:
+                return sum(dice)
+        return 0
+
+    elif category == 'four_of_a_kind':
+        for count in dice_counts.values():
+            if count >= 4:
+                return sum(dice)
+        return 0
+
+    elif category == 'full_house':
+        has_three = False
+        has_two = False
+        for count in dice_counts.values():
+            if count == 3:
+                has_three = True
+            elif count == 2:
+                has_two = True
+        return 25 if has_three and has_two else 0
+
+    elif category == 'small_straight':
+        sorted_dice = sorted(dice)
+        # Check for 1,2,3,4 or 2,3,4,5 or 3,4,5,6
+        straights = [
+            [1,2,3,4], [2,3,4,5], [3,4,5,6]
+        ]
+        for straight in straights:
+            if all(num in sorted_dice for num in straight):
+                return 30
+        return 0
+
+    elif category == 'large_straight':
+        sorted_dice = sorted(dice)
+        # Check for 1,2,3,4,5 or 2,3,4,5,6
+        if sorted_dice in [[1,2,3,4,5], [2,3,4,5,6]]:
+            return 40
+        return 0
+
+    elif category == 'yahtzee':
+        for count in dice_counts.values():
+            if count == 5:
+                return 50
+        return 0
+
+    elif category == 'chance':
+        return sum(dice)
+
+    return 0
+
+def next_turn():
+    """Move to the next player's turn"""
+    if not shared_data.game_state['turn_order']:
+        return
+
+    current_idx = shared_data.game_state['turn_order'].index(shared_data.game_state['current_player'])
+    next_idx = (current_idx + 1) % len(shared_data.game_state['turn_order'])
+    shared_data.game_state['current_player'] = shared_data.game_state['turn_order'][next_idx]
+
+    # Reset dice for new turn
+    shared_data.game_state['dice'] = [1, 1, 1, 1, 1]
+    shared_data.game_state['dice_kept'] = [False, False, False, False, False]
+    shared_data.game_state['roll_count'] = 0
+
 def start_game():
     """Start the game when all players are ready"""
     shared_data.game_state['phase'] = 'playing'
@@ -306,8 +409,141 @@ def start_game():
     # Initialize scoreboards
     shared_data.game_state['scores'] = {sid: {} for sid in shared_data.players.keys()}
 
+    # Roll initial dice for first player
+    if shared_data.game_state['current_player']:
+        roll_dice()
+
     socketio.emit('game_started', shared_data.game_state)
     save_game_state()
+
+@socketio.on('roll_dice')
+def handle_roll_dice(data):
+    """Handle dice roll request"""
+    sid = request.sid
+
+    # Only allow current player to roll
+    if sid != shared_data.game_state['current_player']:
+        emit('error', {'message': 'Not your turn'})
+        return
+
+    # Check if player has rolls left
+    if shared_data.game_state['roll_count'] >= shared_data.game_state['max_rolls']:
+        emit('error', {'message': 'No rolls left'})
+        return
+
+    # Get kept dice indices
+    keep_indices = data.get('keep_indices', [])
+
+    # Roll dice
+    new_dice = roll_dice(keep_indices)
+
+    # Save and broadcast
+    save_game_state()
+    socketio.emit('dice_rolled', {
+        'dice': new_dice,
+        'dice_kept': shared_data.game_state['dice_kept'],
+        'roll_count': shared_data.game_state['roll_count'],
+        'player': sid
+    })
+
+@socketio.on('keep_dice')
+def handle_keep_dice(data):
+    """Handle dice keeping selection"""
+    sid = request.sid
+
+    # Only allow current player to keep dice
+    if sid != shared_data.game_state['current_player']:
+        emit('error', {'message': 'Not your turn'})
+        return
+
+    keep_indices = data.get('keep_indices', [])
+    shared_data.game_state['dice_kept'] = [i in keep_indices for i in range(5)]
+
+    save_game_state()
+    socketio.emit('dice_kept', {
+        'dice_kept': shared_data.game_state['dice_kept'],
+        'player': sid
+    })
+
+@socketio.on('score_category')
+def handle_score_category(data):
+    """Handle scoring in a category"""
+    sid = request.sid
+    category = data.get('category', '')
+
+    # Only allow current player to score
+    if sid != shared_data.game_state['current_player']:
+        emit('error', {'message': 'Not your turn'})
+        return
+
+    # Check if category is already used
+    if category in shared_data.game_state['scores'].get(sid, {}):
+        emit('error', {'message': 'Category already used'})
+        return
+
+    # Calculate score
+    dice = shared_data.game_state['dice']
+    score = calculate_score(dice, category)
+
+    # Save score
+    if sid not in shared_data.game_state['scores']:
+        shared_data.game_state['scores'][sid] = {}
+    shared_data.game_state['scores'][sid][category] = score
+
+    # Check if game is finished
+    game_finished = check_game_finished()
+
+    if game_finished:
+        shared_data.game_state['phase'] = 'finished'
+        winner = determine_winner()
+        shared_data.game_state['winner'] = winner
+
+    # Move to next turn (if game not finished)
+    if not game_finished:
+        next_turn()
+
+    save_game_state()
+    socketio.emit('score_submitted', {
+        'player': sid,
+        'category': category,
+        'score': score,
+        'game_finished': game_finished,
+        'winner': winner if game_finished else None
+    })
+
+def check_game_finished():
+    """Check if all players have filled all categories"""
+    for player_scores in shared_data.game_state['scores'].values():
+        if len(player_scores) < 13:  # 13 Yahtzee categories
+            return False
+    return True
+
+def determine_winner():
+    """Determine the winner based on total scores"""
+    player_totals = {}
+
+    for sid, scores in shared_data.game_state['scores'].items():
+        total = 0
+        # Calculate upper section
+        upper_total = 0
+        for category in ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']:
+            upper_total += scores.get(category, 0)
+
+        # Add upper bonus if >= 63
+        if upper_total >= 63:
+            upper_total += 35
+
+        # Add lower section
+        lower_total = 0
+        for category in ['three_of_a_kind', 'four_of_a_kind', 'full_house', 'small_straight', 'large_straight', 'yahtzee', 'chance']:
+            lower_total += scores.get(category, 0)
+
+        total = upper_total + lower_total
+        player_totals[sid] = total
+
+    # Find winner (highest score)
+    winner = max(player_totals, key=player_totals.get)
+    return winner
 
 def run_server():
     """Start the Flask server"""

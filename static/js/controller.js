@@ -56,12 +56,16 @@ class YahtzeeController {
             this.handleDiceRolled(data);
         });
 
-        this.socket.on('turn_changed', (data) => {
-            this.handleTurnChanged(data);
+        this.socket.on('dice_kept', (data) => {
+            this.handleDiceKept(data);
         });
 
-        this.socket.on('game_over', (data) => {
-            this.handleGameOver(data);
+        this.socket.on('score_submitted', (data) => {
+            this.handleScoreSubmitted(data);
+        });
+
+        this.socket.on('error', (data) => {
+            this.showError(data.message);
         });
     }
 
@@ -238,17 +242,13 @@ class YahtzeeController {
     }
 
     handleRollDice() {
-        this.socket.emit('roll_dice');
-    }
-
-    handleRerollDice() {
         const keptDice = [];
         document.querySelectorAll('.die').forEach((die, index) => {
             if (die.classList.contains('kept')) {
                 keptDice.push(index);
             }
         });
-        this.socket.emit('reroll_dice', { kept: keptDice });
+        this.socket.emit('roll_dice', { keep_indices: keptDice });
     }
 
     toggleDieKeep(index) {
@@ -261,14 +261,41 @@ class YahtzeeController {
     }
 
     handleDiceRolled(data) {
-        this.updateDiceDisplay(data.dice, data.kept);
+        this.updateDiceDisplay(data.dice, data.dice_kept);
         this.updateRollCount(data.roll_count, data.max_rolls);
+
+        // Check if it's the current player's turn
+        this.isMyTurn = data.player === this.socket.id;
+        this.updateTurnIndicator(data.player);
+        this.updateGameControls();
     }
 
-    handleTurnChanged(data) {
-        this.isMyTurn = data.current_player === this.playerId;
-        this.updateTurnIndicator(data.current_player_name);
-        this.updateGameControls();
+    handleDiceKept(data) {
+        this.updateDiceDisplay(this.gameState.dice, data.dice_kept);
+    }
+
+    handleScoreSubmitted(data) {
+        // Update game state with new score
+        if (!this.gameState.scores) {
+            this.gameState.scores = {};
+        }
+        if (!this.gameState.scores[data.player]) {
+            this.gameState.scores[data.player] = {};
+        }
+        this.gameState.scores[data.player][data.category] = data.score;
+
+        // Check if game is finished
+        if (data.game_finished) {
+            this.handleGameOver({
+                winner: data.winner,
+                scores: this.gameState.scores
+            });
+        } else {
+            // Move to next turn
+            this.isMyTurn = false;
+            this.updateTurnIndicator('Next Player');
+            this.updateGameControls();
+        }
     }
 
     handleGameOver(data) {
@@ -326,8 +353,17 @@ class YahtzeeController {
         }
     }
 
-    updateTurnIndicator(currentPlayerName) {
-        document.getElementById('current-player').textContent = currentPlayerName;
+    updateTurnIndicator(currentPlayerId) {
+        let displayName = 'Waiting...';
+        if (currentPlayerId === this.socket.id) {
+            displayName = 'Your Turn!';
+        } else if (this.gameState && this.gameState.players) {
+            const player = this.gameState.players.find(p => p.sid === currentPlayerId);
+            if (player) {
+                displayName = `${player.name}'s Turn`;
+            }
+        }
+        document.getElementById('current-player').textContent = displayName;
     }
 
     updateGameControls() {
@@ -345,10 +381,12 @@ class YahtzeeController {
 
     updateGameDisplay() {
         // Update all game display elements
-        this.updateDiceDisplay(this.gameState.dice, this.gameState.dice_kept);
-        this.updateRollCount(this.gameState.roll_count, this.gameState.max_rolls);
-        this.updateTurnIndicator(this.gameState.current_player_name);
-        this.updateGameControls();
+        if (this.gameState) {
+            this.updateDiceDisplay(this.gameState.dice, this.gameState.dice_kept);
+            this.updateRollCount(this.gameState.roll_count, this.gameState.max_rolls);
+            this.updateTurnIndicator(this.gameState.current_player);
+            this.updateGameControls();
+        }
     }
 
     showGameOverScreen(data) {
@@ -356,15 +394,52 @@ class YahtzeeController {
         const scoresDiv = document.getElementById('final-scores');
         const winnerDiv = document.getElementById('winner-text');
 
+        // Find winner's name
+        let winnerName = 'Unknown';
+        if (this.gameState && this.gameState.players) {
+            const winnerPlayer = this.gameState.players.find(p => p.sid === data.winner);
+            if (winnerPlayer) {
+                winnerName = winnerPlayer.name;
+            }
+        }
+
         // Populate final scores
         scoresDiv.innerHTML = '<h3>Final Scores:</h3>';
-        data.scores.forEach(player => {
-            const scoreDiv = document.createElement('div');
-            scoreDiv.textContent = `${player.name}: ${player.total_score}`;
-            scoresDiv.appendChild(scoreDiv);
-        });
 
-        winnerDiv.textContent = `🏆 Winner: ${data.winner}!`;
+        // Calculate and display scores for each player
+        if (this.gameState && this.gameState.players) {
+            this.gameState.players.forEach(player => {
+                const playerScores = data.scores[player.sid] || {};
+                let totalScore = 0;
+
+                // Calculate upper section
+                const upperCategories = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
+                let upperTotal = 0;
+                upperCategories.forEach(cat => {
+                    upperTotal += playerScores[cat] || 0;
+                });
+
+                // Add upper bonus if >= 63
+                if (upperTotal >= 63) {
+                    upperTotal += 35;
+                }
+
+                // Add lower section
+                const lowerCategories = ['three_of_a_kind', 'four_of_a_kind', 'full_house', 'small_straight', 'large_straight', 'yahtzee', 'chance'];
+                let lowerTotal = 0;
+                lowerCategories.forEach(cat => {
+                    lowerTotal += playerScores[cat] || 0;
+                });
+
+                totalScore = upperTotal + lowerTotal;
+
+                const scoreDiv = document.createElement('div');
+                scoreDiv.textContent = `${player.name}: ${totalScore}`;
+                scoresDiv.appendChild(scoreDiv);
+            });
+        }
+
+        winnerDiv.textContent = `🏆 Winner: ${winnerName}!`;
 
         overlay.classList.remove('hidden');
     }
