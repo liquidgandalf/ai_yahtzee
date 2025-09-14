@@ -257,6 +257,9 @@ def handle_join(data):
     ip_to_sid[client_ip] = new_sid
 
     print(f"Player {name} (IP: {client_ip}) joined or rejoined (SID: {new_sid})")
+    print(f"Total players now: {len(players)}")
+    print(f"Players dict: {list(players.keys())}")
+
     emit('joined', {'color': color, 'game_state': game_state})
 
     save_game_state()

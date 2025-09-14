@@ -211,6 +211,9 @@ def run_game(screen, qr_surface):
 
         # Debug info
         debug_text = f"Players: {len(players)} | Phase: {game_state['phase']}"
+        if players:
+            player_names = [p['name'] for p in players.values()]
+            debug_text += f" | Names: {', '.join(player_names)}"
         debug_surf = font.render(debug_text, True, (255, 255, 0))
         screen.blit(debug_surf, (GAME_AREA_X + 20, SCREEN_HEIGHT - 30))
 
