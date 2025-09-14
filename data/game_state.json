@@ -1,27 +1,13 @@
 {
-  "players": {
-    "Ki3P5fdvozbeQoR2AAAD": {
-      "color": [
-        0,
-        200,
-        50
-      ],
-      "name": "Fred",
-      "ready": false,
-      "last_active": 1757867837.1601083,
-      "ip": "127.0.0.1"
-    }
-  },
-  "ip_to_sid": {
-    "127.0.0.1": "Ki3P5fdvozbeQoR2AAAD"
-  },
+  "players": {},
+  "ip_to_sid": {},
   "player_names": {
     "192.168.0.248": "Derek",
     "127.0.0.1": "Fred"
   },
   "game_state": {
-    "phase": "waiting",
-    "current_player": null,
+    "phase": "playing",
+    "current_player": "a8JyaBAFsKUBUn-bAAAF",
     "dice": [
       1,
       1,
@@ -38,15 +24,13 @@
     ],
     "roll_count": 0,
     "max_rolls": 3,
-    "scores": {},
-    "turn_order": [],
+    "scores": {
+      "a8JyaBAFsKUBUn-bAAAF": {}
+    },
+    "turn_order": [
+      "a8JyaBAFsKUBUn-bAAAF"
+    ],
     "winner": null
   },
-  "used_colors": [
-    [
-      0,
-      200,
-      50
-    ]
-  ]
+  "used_colors": []
 }
