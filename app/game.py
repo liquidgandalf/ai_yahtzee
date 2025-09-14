@@ -181,6 +181,7 @@ def run_game(screen, qr_surface):
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
     running = True
+    frame_count = 0
 
     print("🎮 Starting Pygame display loop...")
     print(f"📺 Screen size: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
@@ -188,6 +189,7 @@ def run_game(screen, qr_surface):
     print(f"🎲 Game phase: {game_state['phase']}")
 
     while running:
+        frame_count += 1
         screen.fill(BG_COLOR)
 
         # Draw borders
@@ -209,11 +211,18 @@ def run_game(screen, qr_surface):
         draw_dice(screen, font)
         draw_scoreboards(screen, font)
 
-        # Debug info
+        # Debug info with periodic logging
         debug_text = f"Players: {len(players)} | Phase: {game_state['phase']}"
         if players:
             player_names = [p['name'] for p in players.values()]
             debug_text += f" | Names: {', '.join(player_names)}"
+
+            # Log player changes every 30 frames (1 second at 30fps)
+            if frame_count % 30 == 0:
+                print(f"📊 Display Update - Players: {len(players)}, Names: {player_names}, Phase: {game_state['phase']}")
+        elif frame_count % 30 == 0:
+            print(f"📊 Display Update - Players: {len(players)}, Phase: {game_state['phase']}")
+
         debug_surf = font.render(debug_text, True, (255, 255, 0))
         screen.blit(debug_surf, (GAME_AREA_X + 20, SCREEN_HEIGHT - 30))
 

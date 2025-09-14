@@ -259,10 +259,14 @@ def handle_join(data):
     print(f"Player {name} (IP: {client_ip}) joined or rejoined (SID: {new_sid})")
     print(f"Total players now: {len(players)}")
     print(f"Players dict: {list(players.keys())}")
+    print(f"Player details: {players[new_sid]}")
 
     emit('joined', {'color': color, 'game_state': game_state})
 
     save_game_state()
+
+    # Force a display update by printing to console
+    print(f"🎮 SERVER: Player {name} joined - display should update now")
 
 @socketio.on('ready')
 def handle_ready():
