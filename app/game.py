@@ -90,44 +90,91 @@ def draw_dice(screen, font):
     screen.blit(roll_surf, (20, dice_y + 80))
 
 def draw_scoreboards(screen, font):
-    """Draw player scoreboards"""
+    """Draw player scoreboards in grid format: players as columns, categories as rows"""
     start_x = GAME_AREA_X + 20
     start_y = 20
+    cell_width = 100
+    cell_height = 30
+    header_height = 40
 
-    # Headers
+    # Get player list (sorted by join order)
+    player_list = []
+    for sid, player_data in players.items():
+        player_data_copy = player_data.copy()
+        player_data_copy['sid'] = sid  # Add sid to player data
+        player_list.append(player_data_copy)
+
+    if not player_list:
+        return
+
+    # Categories (rows)
     categories = [
         "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes",
         "3-of-Kind", "4-of-Kind", "Full House", "Sm Straight",
         "Lg Straight", "Yahtzee", "Chance"
     ]
 
-    # Draw headers
-    for i, category in enumerate(categories):
-        x = start_x + (i % 4) * 150
-        y = start_y + (i // 4) * 30
-        cat_surf = font.render(category[:8], True, TEXT_COLOR)
-        screen.blit(cat_surf, (x, y))
+    # Draw player names as column headers
+    for i, player in enumerate(player_list):
+        player_x = start_x + (i + 1) * cell_width  # +1 to skip category column
 
-    # Draw player scores
-    player_y = start_y + 150
-    for sid, player in players.items():
-        player_scores = game_state['scores'].get(sid, {})
+        # Player name (truncated if too long)
+        name = player['name'][:8] if len(player['name']) > 8 else player['name']
+        name_surf = font.render(name, True, player['color'])
+        screen.blit(name_surf, (player_x + 5, start_y + 10))
 
-        # Player name
-        name_surf = font.render(player['name'], True, player['color'])
-        screen.blit(name_surf, (start_x, player_y))
+    # Draw category names and scores
+    for row, category in enumerate(categories):
+        row_y = start_y + header_height + (row * cell_height)
 
-        # Scores
-        for i, category in enumerate(categories):
-            x = start_x + (i % 4) * 150
-            y = player_y + ((i // 4) + 1) * 25
+        # Category name in first column
+        cat_name = category[:10]  # Truncate if too long
+        cat_surf = font.render(cat_name, True, TEXT_COLOR)
+        screen.blit(cat_surf, (start_x + 5, row_y + 5))
 
-            score = player_scores.get(category.lower().replace(' ', '_'), '')
+        # Draw scores for each player
+        for col, player in enumerate(player_list):
+            player_x = start_x + (col + 1) * cell_width
+            player_scores = game_state['scores'].get(player['sid'], {})
+
+            # Get score for this category
+            score_key = category.lower().replace(' ', '_').replace('-', '_')
+            score = player_scores.get(score_key, '')
+
+            # Draw cell background
+            pygame.draw.rect(screen, (30, 30, 30), (player_x, row_y, cell_width-2, cell_height-2))
+
+            # Draw score or dash
             score_text = str(score) if score != '' else '-'
             score_surf = font.render(score_text, True, TEXT_COLOR)
-            screen.blit(score_surf, (x, y))
+            screen.blit(score_surf, (player_x + cell_width//2 - 5, row_y + 5))
 
-        player_y += 200
+    # Draw total row
+    total_row_y = start_y + header_height + (len(categories) * cell_height)
+
+    # Total label
+    total_surf = font.render("TOTAL", True, TEXT_COLOR)
+    screen.blit(total_surf, (start_x + 5, total_row_y + 5))
+
+    # Draw totals for each player
+    for col, player in enumerate(player_list):
+        player_x = start_x + (col + 1) * cell_width
+        player_scores = game_state['scores'].get(player['sid'], {})
+
+        # Calculate total score
+        total = 0
+        for category in categories:
+            score_key = category.lower().replace(' ', '_').replace('-', '_')
+            score = player_scores.get(score_key, 0)
+            if isinstance(score, int):
+                total += score
+
+        # Draw total cell background
+        pygame.draw.rect(screen, (40, 40, 40), (player_x, total_row_y, cell_width-2, cell_height-2))
+
+        # Draw total
+        total_surf = font.render(str(total), True, (255, 255, 0))  # Yellow for totals
+        screen.blit(total_surf, (player_x + cell_width//2 - 10, total_row_y + 5))
 
 def run_game(screen, qr_surface):
     """Main game display loop"""
