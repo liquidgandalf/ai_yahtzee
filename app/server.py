@@ -55,7 +55,7 @@ def save_game_state():
         'ip_to_sid': ip_to_sid,
         'player_names': player_names,
         'game_state': game_state,
-        'used_colors': list(used_colors)
+        'used_colors': list(used_colors)  # Convert set to list for JSON
     }
     with open(game_state_file, 'w') as f:
         json.dump(state_to_save, f, indent=2)
@@ -71,7 +71,7 @@ def load_game_state():
                 ip_to_sid = saved_state.get('ip_to_sid', {})
                 player_names = saved_state.get('player_names', {})
                 game_state = saved_state.get('game_state', game_state)
-                used_colors = set(saved_state.get('used_colors', []))
+                used_colors = set(tuple(color) if isinstance(color, list) else color for color in saved_state.get('used_colors', []))
                 print("Game state loaded successfully")
         except Exception as e:
             print(f"Error loading game state: {e}")
@@ -195,9 +195,9 @@ def handle_ready():
         players[sid]['ready'] = True
         players[sid]['last_active'] = time.time()
 
-        # Check if we can start the game
+        # Check if we can start the game (allow single player for now)
         ready_players = [p for p in players.values() if p['ready']]
-        if len(ready_players) >= 2 and len(ready_players) == len(players):
+        if len(ready_players) >= 1 and len(ready_players) == len(players):
             start_game()
 
         save_game_state()
