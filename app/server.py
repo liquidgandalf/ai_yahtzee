@@ -93,6 +93,34 @@ def handle_connect():
     """Handle new socket connections"""
     print("Client connected")
 
+@socketio.on('get_game_state')
+def handle_get_game_state():
+    """Send current game state to client"""
+    client_ip = request.remote_addr
+    is_known_ip = client_ip in player_names
+
+    # Determine what screen to show based on IP and game state
+    if not is_known_ip and game_state['phase'] == 'playing':
+        # Unknown IP + Game in progress = Cannot join
+        emit('game_state', {
+            'phase': 'cannot_join',
+            'reason': 'Game already in progress'
+        })
+    else:
+        # Send current game state
+        emit('game_state', {
+            'phase': game_state['phase'],
+            'players': list(players.values()),
+            'current_player': game_state.get('current_player'),
+            'dice': game_state['dice'],
+            'dice_kept': game_state['dice_kept'],
+            'roll_count': game_state['roll_count'],
+            'max_rolls': game_state['max_rolls'],
+            'scores': game_state['scores'],
+            'is_known_ip': is_known_ip,
+            'saved_name': player_names.get(client_ip, '')
+        })
+
 @socketio.on('disconnect')
 def handle_disconnect():
     """Handle client disconnections"""

@@ -121,20 +121,18 @@ class YahtzeeController {
     }
 
     handleGameState(data) {
+        console.log('Received game state:', data);
         this.gameState = data;
 
-        // Determine which screen to show based on IP recognition and game state
-        const isKnownIP = this.checkIfKnownIP();
-        const gameInProgress = data.phase === 'playing';
-
-        if (!isKnownIP && gameInProgress) {
-            // Unknown IP + Game in progress = Cannot join
+        // Handle different scenarios based on server response
+        if (data.phase === 'cannot_join') {
+            // Server says cannot join
             this.showScreen('cannot-join');
-        } else if (isKnownIP) {
-            // Known IP = Auto-rejoin
-            this.handleKnownPlayerRejoin();
-        } else if (!isKnownIP && !gameInProgress) {
-            // Unknown IP + No game = Show join form
+        } else if (data.is_known_ip) {
+            // Known IP - auto-rejoin or show ready screen
+            this.handleKnownPlayerRejoin(data);
+        } else {
+            // Unknown IP - show join form
             this.showScreen('join');
         }
     }
@@ -145,14 +143,37 @@ class YahtzeeController {
         return document.getElementById('player-name').value !== '';
     }
 
-    handleKnownPlayerRejoin() {
-        // For known players, try to rejoin automatically
-        const savedName = document.getElementById('player-name').value;
-        if (savedName) {
-            this.socket.emit('join', { name: savedName });
+    handleKnownPlayerRejoin(data) {
+        // For known players, check if they're already in the game
+        const currentPlayer = data.players.find(p => p.ip === this.getClientIP());
+
+        if (currentPlayer) {
+            // Player is already in the game - show appropriate screen
+            this.playerName = currentPlayer.name;
+            this.playerId = currentPlayer.sid;
+
+            if (data.phase === 'waiting') {
+                this.showScreen('waiting');
+                this.updatePlayersList();
+            } else if (data.phase === 'playing') {
+                this.showScreen('game');
+                this.updateGameDisplay();
+            }
         } else {
-            this.showScreen('join');
+            // Known IP but not in current game - show join with saved name
+            const savedName = data.saved_name || document.getElementById('player-name').value;
+            if (savedName) {
+                document.getElementById('player-name').value = savedName;
+                this.socket.emit('join', { name: savedName });
+            } else {
+                this.showScreen('join');
+            }
         }
+    }
+
+    getClientIP() {
+        // This is a simple way - in production you'd get this from server
+        return window.location.hostname;
     }
 
     handleJoined(data) {
@@ -238,12 +259,18 @@ class YahtzeeController {
         const container = document.getElementById('players-container');
         container.innerHTML = '';
 
-        // This would be populated from server data
-        // For now, just show current player
-        const playerDiv = document.createElement('div');
-        playerDiv.className = 'player-item';
-        playerDiv.textContent = `${this.playerName} (You)`;
-        container.appendChild(playerDiv);
+        if (this.gameState && this.gameState.players) {
+            this.gameState.players.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-item';
+
+                const isCurrentPlayer = player.name === this.playerName;
+                const readyStatus = player.ready ? ' (Ready)' : ' (Waiting)';
+
+                playerDiv.textContent = `${player.name}${isCurrentPlayer ? ' (You)' : ''}${readyStatus}`;
+                container.appendChild(playerDiv);
+            });
+        }
     }
 
     updateDiceDisplay(dice, kept) {
