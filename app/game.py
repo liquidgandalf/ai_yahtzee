@@ -5,7 +5,7 @@ Pygame-based server display for the Yahtzee game
 
 import pygame
 import sys
-from app.server import players, game_state, socketio
+from app.server import players, game_state, socketio, data_lock
 
 # Constants
 SCREEN_WIDTH = 1920
@@ -37,31 +37,32 @@ def draw_sidebar(screen, font):
     qr_text = font.render("QR Code:", True, TEXT_COLOR)
     screen.blit(qr_text, (20, 60))
 
-    # Player list
+    # Player list - use lock for thread safety
     y_offset = 120
-    for i, (sid, player) in enumerate(players.items()):
-        # Player color indicator
-        pygame.draw.rect(screen, player['color'], (20, y_offset, 20, 20))
+    with data_lock:
+        for i, (sid, player) in enumerate(players.items()):
+            # Player color indicator
+            pygame.draw.rect(screen, player['color'], (20, y_offset, 20, 20))
 
-        # Player name and status
-        status = "Ready" if player['ready'] else "Waiting"
-        name_surf = font.render(f"{player['name']} ({status})", True, TEXT_COLOR)
-        screen.blit(name_surf, (50, y_offset))
+            # Player name and status
+            status = "Ready" if player['ready'] else "Waiting"
+            name_surf = font.render(f"{player['name']} ({status})", True, TEXT_COLOR)
+            screen.blit(name_surf, (50, y_offset))
 
-        y_offset += 30
+            y_offset += 30
 
-    # Game status
-    status_y = y_offset + 20
-    phase_text = f"Phase: {game_state['phase'].title()}"
-    phase_surf = font.render(phase_text, True, TEXT_COLOR)
-    screen.blit(phase_surf, (20, status_y))
+        # Game status
+        status_y = y_offset + 20
+        phase_text = f"Phase: {game_state['phase'].title()}"
+        phase_surf = font.render(phase_text, True, TEXT_COLOR)
+        screen.blit(phase_surf, (20, status_y))
 
-    if game_state['current_player']:
-        current_player = players.get(game_state['current_player'])
-        if current_player:
-            current_text = f"Current: {current_player['name']}"
-            current_surf = font.render(current_text, True, TEXT_COLOR)
-            screen.blit(current_surf, (20, status_y + 30))
+        if game_state['current_player']:
+            current_player = players.get(game_state['current_player'])
+            if current_player:
+                current_text = f"Current: {current_player['name']}"
+                current_surf = font.render(current_text, True, TEXT_COLOR)
+                screen.blit(current_surf, (20, status_y + 30))
 
 def draw_dice(screen, font):
     """Draw the current dice"""
@@ -97,84 +98,85 @@ def draw_scoreboards(screen, font):
     cell_height = 30
     header_height = 40
 
-    # Get player list (sorted by join order)
-    player_list = []
-    for sid, player_data in players.items():
-        player_data_copy = player_data.copy()
-        player_data_copy['sid'] = sid  # Add sid to player data
-        player_list.append(player_data_copy)
+    # Get player list (sorted by join order) - use lock for thread safety
+    with data_lock:
+        player_list = []
+        for sid, player_data in players.items():
+            player_data_copy = player_data.copy()
+            player_data_copy['sid'] = sid  # Add sid to player data
+            player_list.append(player_data_copy)
 
-    if not player_list:
-        return
+        if not player_list:
+            return
 
-    # Categories (rows)
-    categories = [
-        "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes",
-        "3-of-Kind", "4-of-Kind", "Full House", "Sm Straight",
-        "Lg Straight", "Yahtzee", "Chance"
-    ]
+        # Categories (rows)
+        categories = [
+            "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes",
+            "3-of-Kind", "4-of-Kind", "Full House", "Sm Straight",
+            "Lg Straight", "Yahtzee", "Chance"
+        ]
 
-    # Draw player names as column headers
-    for i, player in enumerate(player_list):
-        player_x = start_x + (i + 1) * cell_width  # +1 to skip category column
+        # Draw player names as column headers
+        for i, player in enumerate(player_list):
+            player_x = start_x + (i + 1) * cell_width  # +1 to skip category column
 
-        # Player name (truncated if too long)
-        name = player['name'][:8] if len(player['name']) > 8 else player['name']
-        name_surf = font.render(name, True, player['color'])
-        screen.blit(name_surf, (player_x + 5, start_y + 10))
+            # Player name (truncated if too long)
+            name = player['name'][:8] if len(player['name']) > 8 else player['name']
+            name_surf = font.render(name, True, player['color'])
+            screen.blit(name_surf, (player_x + 5, start_y + 10))
 
-    # Draw category names and scores
-    for row, category in enumerate(categories):
-        row_y = start_y + header_height + (row * cell_height)
+        # Draw category names and scores
+        for row, category in enumerate(categories):
+            row_y = start_y + header_height + (row * cell_height)
 
-        # Category name in first column
-        cat_name = category[:10]  # Truncate if too long
-        cat_surf = font.render(cat_name, True, TEXT_COLOR)
-        screen.blit(cat_surf, (start_x + 5, row_y + 5))
+            # Category name in first column
+            cat_name = category[:10]  # Truncate if too long
+            cat_surf = font.render(cat_name, True, TEXT_COLOR)
+            screen.blit(cat_surf, (start_x + 5, row_y + 5))
 
-        # Draw scores for each player
+            # Draw scores for each player
+            for col, player in enumerate(player_list):
+                player_x = start_x + (col + 1) * cell_width
+                player_scores = game_state['scores'].get(player['sid'], {})
+
+                # Get score for this category
+                score_key = category.lower().replace(' ', '_').replace('-', '_')
+                score = player_scores.get(score_key, '')
+
+                # Draw cell background
+                pygame.draw.rect(screen, (30, 30, 30), (player_x, row_y, cell_width-2, cell_height-2))
+
+                # Draw score or dash
+                score_text = str(score) if score != '' else '-'
+                score_surf = font.render(score_text, True, TEXT_COLOR)
+                screen.blit(score_surf, (player_x + cell_width//2 - 5, row_y + 5))
+
+        # Draw total row
+        total_row_y = start_y + header_height + (len(categories) * cell_height)
+
+        # Total label
+        total_surf = font.render("TOTAL", True, TEXT_COLOR)
+        screen.blit(total_surf, (start_x + 5, total_row_y + 5))
+
+        # Draw totals for each player
         for col, player in enumerate(player_list):
             player_x = start_x + (col + 1) * cell_width
             player_scores = game_state['scores'].get(player['sid'], {})
 
-            # Get score for this category
-            score_key = category.lower().replace(' ', '_').replace('-', '_')
-            score = player_scores.get(score_key, '')
+            # Calculate total score
+            total = 0
+            for category in categories:
+                score_key = category.lower().replace(' ', '_').replace('-', '_')
+                score = player_scores.get(score_key, 0)
+                if isinstance(score, int):
+                    total += score
 
-            # Draw cell background
-            pygame.draw.rect(screen, (30, 30, 30), (player_x, row_y, cell_width-2, cell_height-2))
+            # Draw total cell background
+            pygame.draw.rect(screen, (40, 40, 40), (player_x, total_row_y, cell_width-2, cell_height-2))
 
-            # Draw score or dash
-            score_text = str(score) if score != '' else '-'
-            score_surf = font.render(score_text, True, TEXT_COLOR)
-            screen.blit(score_surf, (player_x + cell_width//2 - 5, row_y + 5))
-
-    # Draw total row
-    total_row_y = start_y + header_height + (len(categories) * cell_height)
-
-    # Total label
-    total_surf = font.render("TOTAL", True, TEXT_COLOR)
-    screen.blit(total_surf, (start_x + 5, total_row_y + 5))
-
-    # Draw totals for each player
-    for col, player in enumerate(player_list):
-        player_x = start_x + (col + 1) * cell_width
-        player_scores = game_state['scores'].get(player['sid'], {})
-
-        # Calculate total score
-        total = 0
-        for category in categories:
-            score_key = category.lower().replace(' ', '_').replace('-', '_')
-            score = player_scores.get(score_key, 0)
-            if isinstance(score, int):
-                total += score
-
-        # Draw total cell background
-        pygame.draw.rect(screen, (40, 40, 40), (player_x, total_row_y, cell_width-2, cell_height-2))
-
-        # Draw total
-        total_surf = font.render(str(total), True, (255, 255, 0))  # Yellow for totals
-        screen.blit(total_surf, (player_x + cell_width//2 - 10, total_row_y + 5))
+            # Draw total
+            total_surf = font.render(str(total), True, (255, 255, 0))  # Yellow for totals
+            screen.blit(total_surf, (player_x + cell_width//2 - 10, total_row_y + 5))
 
 def run_game(screen, qr_surface):
     """Main game display loop"""
@@ -211,17 +213,18 @@ def run_game(screen, qr_surface):
         draw_dice(screen, font)
         draw_scoreboards(screen, font)
 
-        # Debug info with periodic logging
-        debug_text = f"Players: {len(players)} | Phase: {game_state['phase']}"
-        if players:
-            player_names = [p['name'] for p in players.values()]
-            debug_text += f" | Names: {', '.join(player_names)}"
+        # Debug info with periodic logging - use lock for thread safety
+        with data_lock:
+            debug_text = f"Players: {len(players)} | Phase: {game_state['phase']}"
+            if players:
+                player_names = [p['name'] for p in players.values()]
+                debug_text += f" | Names: {', '.join(player_names)}"
 
-            # Log player changes every 30 frames (1 second at 30fps)
-            if frame_count % 30 == 0:
-                print(f"📊 Display Update - Players: {len(players)}, Names: {player_names}, Phase: {game_state['phase']}")
-        elif frame_count % 30 == 0:
-            print(f"📊 Display Update - Players: {len(players)}, Phase: {game_state['phase']}")
+                # Log player changes every 30 frames (1 second at 30fps)
+                if frame_count % 30 == 0:
+                    print(f"📊 Display Update - Players: {len(players)}, Names: {player_names}, Phase: {game_state['phase']}")
+            elif frame_count % 30 == 0:
+                print(f"📊 Display Update - Players: {len(players)}, Phase: {game_state['phase']}")
 
         debug_surf = font.render(debug_text, True, (255, 255, 0))
         screen.blit(debug_surf, (GAME_AREA_X + 20, SCREEN_HEIGHT - 30))

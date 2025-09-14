@@ -7,6 +7,7 @@ import os
 import json
 import random
 import time
+import threading
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 
@@ -22,6 +23,9 @@ game_state_file = os.path.join(data_dir, 'game_state.json')
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 app.config['SECRET_KEY'] = 'ai_yahtzee_secret_key_change_in_production'
 socketio = SocketIO(app)
+
+# Thread synchronization
+data_lock = threading.Lock()
 
 # Game state
 players = {}
@@ -225,48 +229,49 @@ def handle_join(data):
         emit('join_error', {'error': 'Name is required'})
         return
 
-    # Update name memory
-    player_names[client_ip] = name
+    with data_lock:
+        # Update name memory
+        player_names[client_ip] = name
 
-    # Reclaim old session
-    old_sid = ip_to_sid.get(client_ip)
-    if old_sid:
-        old_player = players.pop(old_sid, None)
-    else:
-        old_player = None
+        # Reclaim old session
+        old_sid = ip_to_sid.get(client_ip)
+        if old_sid:
+            old_player = players.pop(old_sid, None)
+        else:
+            old_player = None
 
-    # Color: reuse or assign new
-    if old_player:
-        color = old_player['color']
-    else:
-        available_colors = [c for c in COLOR_POOL if c not in used_colors]
-        color = random.choice(available_colors) if available_colors else (
-            random.randint(50, 255), random.randint(50, 255), random.randint(50, 255)
-        )
-        used_colors.add(tuple(color))  # Ensure color is stored as tuple in set
+        # Color: reuse or assign new
+        if old_player:
+            color = old_player['color']
+        else:
+            available_colors = [c for c in COLOR_POOL if c not in used_colors]
+            color = random.choice(available_colors) if available_colors else (
+                random.randint(50, 255), random.randint(50, 255), random.randint(50, 255)
+            )
+            used_colors.add(tuple(color))  # Ensure color is stored as tuple in set
 
-    # Register new player session
-    players[new_sid] = {
-        'color': color,
-        'name': name,
-        'ready': False,
-        'last_active': time.time(),
-        'ip': client_ip
-    }
+        # Register new player session
+        players[new_sid] = {
+            'color': color,
+            'name': name,
+            'ready': False,
+            'last_active': time.time(),
+            'ip': client_ip
+        }
 
-    ip_to_sid[client_ip] = new_sid
+        ip_to_sid[client_ip] = new_sid
 
-    print(f"Player {name} (IP: {client_ip}) joined or rejoined (SID: {new_sid})")
-    print(f"Total players now: {len(players)}")
-    print(f"Players dict: {list(players.keys())}")
-    print(f"Player details: {players[new_sid]}")
+        print(f"Player {name} (IP: {client_ip}) joined or rejoined (SID: {new_sid})")
+        print(f"Total players now: {len(players)}")
+        print(f"Players dict: {list(players.keys())}")
+        print(f"Player details: {players[new_sid]}")
 
-    emit('joined', {'color': color, 'game_state': game_state})
+        emit('joined', {'color': color, 'game_state': game_state})
 
-    save_game_state()
+        save_game_state()
 
-    # Force a display update by printing to console
-    print(f"🎮 SERVER: Player {name} joined - display should update now")
+        # Force a display update by printing to console
+        print(f"🎮 SERVER: Player {name} joined - display should update now")
 
 @socketio.on('ready')
 def handle_ready():
