@@ -60,6 +60,37 @@ def save_game_state():
     with open(game_state_file, 'w') as f:
         json.dump(state_to_save, f, indent=2)
 
+def should_reset_game_state(saved_state):
+    """Check if we should reset the game state instead of loading it"""
+    game_state_data = saved_state.get('game_state', {})
+
+    # Reset if game is finished
+    if game_state_data.get('phase') == 'finished':
+        return True
+
+    # Reset if no players
+    players_data = saved_state.get('players', {})
+    if not players_data:
+        return True
+
+    # Reset if all players have no scores (empty or zero scores)
+    scores_data = game_state_data.get('scores', {})
+    if not scores_data:
+        return True
+
+    # Check if any player has actual scores
+    has_scores = False
+    for player_scores in scores_data.values():
+        if player_scores:  # Has any scores at all
+            has_scores = True
+            break
+
+    # Reset if no actual scores (only empty scoreboards)
+    if not has_scores:
+        return True
+
+    return False
+
 def load_game_state():
     """Load game state from file"""
     global players, ip_to_sid, player_names, game_state, used_colors
@@ -67,14 +98,47 @@ def load_game_state():
         try:
             with open(game_state_file, 'r') as f:
                 saved_state = json.load(f)
-                players = saved_state.get('players', {})
-                ip_to_sid = saved_state.get('ip_to_sid', {})
-                player_names = saved_state.get('player_names', {})
-                game_state = saved_state.get('game_state', game_state)
-                used_colors = set(tuple(color) if isinstance(color, list) else color for color in saved_state.get('used_colors', []))
-                print("Game state loaded successfully")
+
+            # Check if we should reset instead of loading
+            if should_reset_game_state(saved_state):
+                print("Old game state found - resetting for fresh start")
+                # Keep player names for convenience, but reset everything else
+                player_names_temp = saved_state.get('player_names', {})
+                reset_game_state()
+                player_names.update(player_names_temp)  # Restore saved names
+                save_game_state()  # Save the reset state
+                return
+
+            # Load the saved state
+            players = saved_state.get('players', {})
+            ip_to_sid = saved_state.get('ip_to_sid', {})
+            player_names = saved_state.get('player_names', {})
+            game_state = saved_state.get('game_state', game_state)
+            used_colors = set(tuple(color) if isinstance(color, list) else color for color in saved_state.get('used_colors', []))
+            print("Game state loaded successfully")
+
         except Exception as e:
             print(f"Error loading game state: {e}")
+            reset_game_state()
+
+def reset_game_state():
+    """Reset all game state to initial values"""
+    global players, ip_to_sid, game_state, used_colors
+    players = {}
+    ip_to_sid = {}
+    game_state = {
+        'phase': 'waiting',  # waiting, playing, finished
+        'current_player': None,
+        'dice': [1, 1, 1, 1, 1],
+        'dice_kept': [False, False, False, False, False],
+        'roll_count': 0,
+        'max_rolls': 3,
+        'scores': {},  # player_sid -> category -> score
+        'turn_order': [],
+        'winner': None
+    }
+    used_colors = set()
+    print("Game state reset to initial values")
 
 @app.route('/')
 def index():
