@@ -99,16 +99,22 @@ def handle_get_game_state():
     client_ip = request.remote_addr
     is_known_ip = client_ip in player_names
 
+    print(f"Client {client_ip} requested game state")
+    print(f"Is known IP: {is_known_ip}")
+    print(f"Game phase: {game_state['phase']}")
+    print(f"Players: {list(players.keys())}")
+
     # Determine what screen to show based on IP and game state
     if not is_known_ip and game_state['phase'] == 'playing':
         # Unknown IP + Game in progress = Cannot join
+        print("Sending cannot_join response")
         emit('game_state', {
             'phase': 'cannot_join',
             'reason': 'Game already in progress'
         })
     else:
         # Send current game state
-        emit('game_state', {
+        response_data = {
             'phase': game_state['phase'],
             'players': list(players.values()),
             'current_player': game_state.get('current_player'),
@@ -119,7 +125,9 @@ def handle_get_game_state():
             'scores': game_state['scores'],
             'is_known_ip': is_known_ip,
             'saved_name': player_names.get(client_ip, '')
-        })
+        }
+        print(f"Sending game state: {response_data}")
+        emit('game_state', response_data)
 
 @socketio.on('disconnect')
 def handle_disconnect():

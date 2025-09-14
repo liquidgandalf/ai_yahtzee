@@ -1,26 +1,26 @@
 {
   "players": {
-    "072Wl5bCcQ4u2IkSAAAD": {
+    "V9DJByBusPz6bh8gAAAD": {
       "color": [
         255,
-        165,
-        0
+        105,
+        180
       ],
       "name": "Derek",
-      "ready": false,
-      "last_active": 1757866065.3453188,
+      "ready": true,
+      "last_active": 1757866371.5945244,
       "ip": "192.168.0.248"
     }
   },
   "ip_to_sid": {
-    "192.168.0.248": "072Wl5bCcQ4u2IkSAAAD"
+    "192.168.0.248": "V9DJByBusPz6bh8gAAAD"
   },
   "player_names": {
     "192.168.0.248": "Derek"
   },
   "game_state": {
     "phase": "playing",
-    "current_player": "mtWpZjh2v-2eULhcAAAF",
+    "current_player": "V9DJByBusPz6bh8gAAAD",
     "dice": [
       1,
       1,
@@ -38,18 +38,18 @@
     "roll_count": 0,
     "max_rolls": 3,
     "scores": {
-      "mtWpZjh2v-2eULhcAAAF": {}
+      "V9DJByBusPz6bh8gAAAD": {}
     },
     "turn_order": [
-      "mtWpZjh2v-2eULhcAAAF"
+      "V9DJByBusPz6bh8gAAAD"
     ],
     "winner": null
   },
   "used_colors": [
     [
       255,
-      165,
-      0
+      105,
+      180
     ]
   ]
 }
